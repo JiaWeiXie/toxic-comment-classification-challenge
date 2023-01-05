@@ -54,7 +54,7 @@ notebook:  ## Run Jupyter Lab
 .PHONY: notebook
 
 runserver:  ## Run streamlit
-	streamlit run main.py --server.port 8088
+	python main.py
 .PHONY: runserver
 
 .DEFAULT_GOAL := help

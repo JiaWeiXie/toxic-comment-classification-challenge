@@ -1,9 +1,14 @@
+from typing import List, Dict, Union, Tuple, Any
+from difflib import Differ
+
 import pandas as pd
-import plotly.express as px
-import streamlit as st
+import gradio as gr
+
+from gradio.components import Component
 
 from .service import MLService
 from .settings import DATASET_DIR
+
 
 
 class MainInterface:
@@ -13,77 +18,92 @@ class MainInterface:
     ) -> None:
         self.service = service
 
-    def make_form(self) -> None:
-        with st.form("input_form"):
-            comment_text = st.text_area(
-                "Comment text",
-                max_chars=512,
-                height=120,
-            )
-            top_k = st.number_input(
-                "Top K",
-                min_value=1,
-                max_value=6,
-                value=6,
-            )
-            over_threshold = st.checkbox("Filter threshold", value=True)
-            threshold = st.slider(
-                "Threshold", min_value=0.0, max_value=1.0, value=0.5, step=0.1
-            )
-            submitted = st.form_submit_button("Submit")
-            if submitted:
-                result_items = []
-                with st.spinner("Wait for predict..."):
-                    result_items = self.service.predict(
-                        comment_text,
-                        top_k=top_k,
-                        threshold=threshold,
-                        over_threshold=over_threshold,
-                    )
-                    labels_text = ", ".join(
-                        [
-                            item["label"]
-                            for item in result_items
-                            if item["score"] > threshold
-                        ]
-                    )
-                    st.markdown(f"Prediction: [ :red[{labels_text}] ]")
+    def make_inputs(self) -> List[Component]:
+        input_text = gr.Textbox(lines=5, max_lines=25, label="Comment text")
+        top_k = gr.Slider(minimum=1, maximum=6, step=1, label="Top K")
+        threshold = gr.Slider(minimum=0.0, maximum=1.0, step=0.1, value=0.5, label="Threshold")
+        over_threshold = gr.Checkbox(label="Filter threshold")
+        target_text = gr.Textbox(label="Target labels", visible=False)
+        target_count = gr.Number(label="Target count", visible=False)
+        input_components = [
+            input_text, top_k, threshold,
+            over_threshold, target_text, target_count,
+        ]
+        return input_components
 
-                    if result_items:
-                        df = pd.DataFrame(result_items)
-                        df["text"] = df["score"].apply(lambda x: f"{x * 100:.2f} %")
-                        df = df.sort_values(by="score")
-                        fig = px.bar(
-                            df,
-                            x="score",
-                            y="label",
-                            text="text",
-                            orientation="h",
-                            width=600,
-                        )
-                        st.plotly_chart(fig)
-                    else:
-                        st.info("Not found!")
+    def make_outputs(self) -> List[Component]:
+        result_labels = gr.Label(label="Classification")
+        target_labels = gr.HighlightedText(
+            label="Diff",
+            combine_adjacent=True,
+        ).style(color_map={"+": "red", "-": "green"})
+        output_components = [result_labels, target_labels]
+        return output_components
 
-    def make_examples(self) -> None:
-        df = pd.read_parquet(DATASET_DIR / "train.parquet")
-        with st.container() as container:
-            if st.button("Random examples"):
-                self._random_examples(df)
-            else:
-                self._random_examples(df)
+    def predict(
+        self,
+        comment_text: str,
+        top_k: int,
+        threshold: float,
+        over_threshold: bool,
+        target_text: str,
+        target_count: int,
+    ) -> Tuple[Dict[str, Union[str, float]], str]:
+        data = self.service.predict(
+                    comment_text,
+                    top_k=top_k,
+                    threshold=threshold,
+                    over_threshold=over_threshold,
+                )
+        result_labels = sorted([
+            i["label"]
+            for i in data
+            if i["score"] > threshold
+        ])
+        result_text = ", ".join(result_labels)
+        result_text = f"[ {result_text} ]"
+        diff_text = self.diff_texts(target_text, result_text)
+        return {i["label"]: i["score"] for i in data}, diff_text
 
-    def _random_examples(self, df: pd.DataFrame) -> None:
-        with st.spinner("Wait for random..."):
-            for i in range(7):
-                sample = df[df["label_count"] == i].sample(n=1, random_state=1).iloc[0]
-                labels = self.service.id_to_label(sample["labels"])
-                labels_text = ", ".join(labels)
-                comment_text = sample["comment_text"]
-                st.markdown(f"### {i} lables:\n [ :red[{labels_text}] ]")
-                st.markdown(f"{comment_text}")
+    def diff_texts(self, text1: str, text2: str) -> List[Tuple[str, str]]:
+        d = Differ()
+        return [
+            (token[2:], token[0] if token[0] != " " else None)
+            for token in d.compare(text1, text2)
+        ]
+
+    def _random_examples(self, df: pd.DataFrame) -> List[List[Any]]:
+        examples = []
+        for i in range(7):
+            sample = df[df["label_count"] == i].sample(n=1, random_state=1).iloc[0]
+            labels = self.service.id_to_label(sample["labels"])
+            labels_text = ", ".join(sorted(labels))
+            label_count = sample["label_count"]
+            comment_text = sample["comment_text"]
+            examples.append(
+                [
+                    comment_text,
+                    6,
+                    0.5,
+                    False,
+                    f"[ {labels_text} ]",
+                    label_count,
+                ],
+            )
+        return examples
 
     def render(self) -> None:
-        st.title("Toxic Comment Classification")
-        self.make_form()
-        self.make_examples()
+        gr.close_all()
+        df = pd.read_parquet(DATASET_DIR / "train.parquet")
+        gr.Interface(
+            fn=self.predict,
+            inputs=self.make_inputs(),
+            outputs=self.make_outputs(),
+            title="Toxic Comment Classification",
+            examples=self._random_examples(df),
+        ).launch(
+            debug=True,
+            show_error=True,
+            server_name="0.0.0.0",
+            server_port=8088,
+        )
