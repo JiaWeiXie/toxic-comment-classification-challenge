@@ -27,11 +27,8 @@ $ make install mode=dev
 $ make notebook
 ```
 
-## Unzip dataset
+## Run server
 
 ```bash
-$ cd dataset
-$ unzip ./190kPlusMediumArticles.zip
-Archive:  ./190kPlusMediumArticles.zip
-  inflating: medium_articles.csv 
+$ make runserver
 ```
