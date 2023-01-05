@@ -25,7 +25,7 @@ beautifulsoup4==4.11.1
     # via
     #   -r requirements/dev.in
     #   nbconvert
-black==22.10.0
+black[jupyter]==22.10.0
     # via -r requirements/dev.in
 bleach==5.0.1
     # via nbconvert
@@ -53,7 +53,7 @@ idna==3.4
     # via
     #   anyio
     #   requests
-importlib-metadata==5.0.0
+importlib-metadata==6.0.0
     # via
     #   jupyterlab-server
     #   nbconvert
@@ -64,6 +64,7 @@ ipykernel==6.17.1
     #   notebook
 ipython==8.6.0
     # via
+    #   black
     #   ipykernel
     #   ipywidgets
     #   jupyterlab
@@ -87,7 +88,7 @@ jinja2==3.1.2
     #   notebook
 json5==0.9.10
     # via jupyterlab-server
-jsonschema==4.17.0
+jsonschema==4.17.3
     # via
     #   jupyterlab-server
     #   nbformat
@@ -185,8 +186,6 @@ platformdirs==2.5.4
     # via
     #   black
     #   jupyter-core
-plotly==5.11.0
-    # via -r requirements/dev.in
 prometheus-client==0.15.0
     # via
     #   jupyter-server
@@ -204,13 +203,13 @@ pure-eval==0.2.2
     # via stack-data
 pycparser==2.21
     # via cffi
-pygments==2.13.0
+pygments==2.14.0
     # via
     #   ipython
     #   nbconvert
 pyparsing==3.0.9
     # via packaging
-pyrsistent==0.19.2
+pyrsistent==0.19.3
     # via jsonschema
 python-dateutil==2.8.2
     # via jupyter-client
@@ -241,8 +240,6 @@ soupsieve==2.3.2.post1
     # via beautifulsoup4
 stack-data==0.6.1
     # via ipython
-tenacity==8.1.0
-    # via plotly
 terminado==0.17.0
     # via
     #   jupyter-server
@@ -250,6 +247,8 @@ terminado==0.17.0
     #   notebook
 tinycss2==1.2.1
     # via nbconvert
+tokenize-rt==5.0.0
+    # via black
 tomli==2.0.1
     # via
     #   black
@@ -291,5 +290,5 @@ websocket-client==1.4.2
     # via jupyter-server
 widgetsnbextension==4.0.3
     # via ipywidgets
-zipp==3.10.0
+zipp==3.11.0
     # via importlib-metadata

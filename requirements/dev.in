@@ -1,7 +1,6 @@
-black
+black[jupyter]
 isort
 jupyterlab
 ipywidgets
-plotly==5.11.0
 lxml
 beautifulsoup4

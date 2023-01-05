@@ -53,6 +53,9 @@ notebook:  ## Run Jupyter Lab
 	jupyter-lab --allow-root --ip=0.0.0.0 --no-browser
 .PHONY: notebook
 
+runserver:  ## Run streamlit
+	streamlit run main.py --server.port 8088
+.PHONY: runserver
 
 .DEFAULT_GOAL := help
 help: Makefile
